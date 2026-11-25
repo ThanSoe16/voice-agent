@@ -4,7 +4,7 @@ import type { AgentSettings, Conversation } from "../lib/types";
 
 export type WorkspaceMode = "lab" | "live";
 export type WorkspaceView = "playground" | "history";
-type WorkspaceDialog = "settings" | "help" | null;
+type WorkspaceDialog = "settings" | "api-key" | "help" | null;
 type WorkspaceStorage = Pick<Storage, "getItem" | "setItem">;
 
 // Retain the original keys so existing sessions and preferences survive this refactor.
@@ -36,7 +36,6 @@ export type WorkspaceState = {
   settings: AgentSettings;
   sessions: Conversation[];
   hydrated: boolean;
-  configured: boolean | null;
   dialog: WorkspaceDialog;
   selected: Conversation | null;
   notice: string;
@@ -50,7 +49,6 @@ export type WorkspaceState = {
   saveSession: (session: Conversation) => void;
   openSession: (session: Conversation) => void;
   newSession: () => void;
-  setConfigured: (configured: boolean | null) => void;
   setDialog: (dialog: WorkspaceDialog) => void;
   notify: (notice: string) => void;
   requestDelete: (session: Conversation | null) => void;
@@ -65,7 +63,6 @@ export function createWorkspaceStore() {
     settings: { ...defaultSettings },
     sessions: [],
     hydrated: false,
-    configured: null,
     dialog: null,
     selected: null,
     notice: "",
@@ -98,7 +95,6 @@ export function createWorkspaceStore() {
     })),
     openSession: selected => set({ selected, view: "playground" }),
     newSession: () => set(state => ({ selected: null, view: "playground", formRevision: state.formRevision + 1 })),
-    setConfigured: configured => set({ configured }),
     setDialog: dialog => set({ dialog }),
     notify: notice => set({ notice }),
     requestDelete: pendingDelete => set({ pendingDelete }),

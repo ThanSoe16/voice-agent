@@ -5,10 +5,12 @@ A Next.js voice testing workspace powered by Deepgram.
 ## Run locally
 
 1. Install dependencies with `pnpm install`.
-2. Set `DEEPGRAM_API_KEY` in `.env.local` (or your existing `.env`). See `.env.example`.
-3. Run `pnpm dev` and open the printed local URL.
+2. Run `pnpm dev` and open the printed local URL.
+3. Open **Agent settings**, paste your Deepgram API key, and click **Save API key**.
 
-Keep the API key server-only. The Live Agent mode requires a key with Member or higher permissions to issue short-lived connection tokens, plus Voice Agent access.
+A key saved in Agent settings is persisted by Zustand `persist` in browser local storage under `vocal.deepgram.v1`. It is the only API key used for Live Agent and Speech Lab. Environment API keys are ignored. Removing the saved key disables voice features until a key is saved again. Local storage is not encrypted and is accessible to scripts on this origin. Browser keys are sent in a header to this app’s API routes and forwarded only to Deepgram, without changing server configuration. The Live Agent WebSocket uses a short-lived token rather than the API key. Live Agent requires Member or higher key permissions, plus Voice Agent access.
+
+If Live Agent reports **403 / insufficient permissions**, open Deepgram Console → API Keys → Create Key → Advanced and select **Member** (or higher). Save the replacement key in Agent settings. A key that works for transcription can still lack permission to mint Live Agent tokens. See [Deepgram's token authentication guide](https://developers.deepgram.com/guides/fundamentals/token-based-authentication).
 
 ## Workspace
 
@@ -21,7 +23,7 @@ Speech lab transcribes after recording stops. Live Agent mode streams audio cont
 
 ## State and forms
 
-Zustand stores are created inside `WorkspaceProvider`, so each rendered workspace has its own state. `app/stores/workspace-store.ts` owns navigation, dialogs, settings, and saved sessions. It keeps the original browser storage keys, preserving existing history and preferences. `session-store.ts` holds transient audio and connection state; the visualizer subscribes to microphone levels separately from the page.
+Zustand stores are created inside `WorkspaceProvider`, so each rendered workspace has its own state. `app/stores/workspace-store.ts` owns navigation, dialogs, settings, and saved sessions. It keeps the original browser storage keys, preserving existing history and preferences. `credentials-store.ts` uses Zustand persist with deferred client hydration to store only the Deepgram API key, separately from conversations and agent settings. `session-store.ts` holds transient audio and connection state; the visualizer subscribes to microphone levels separately from the page.
 
 React Hook Form owns the agent settings, speech composer, live message composer, and history search inputs. Audio streams, WebSockets, and playback nodes stay in refs inside the audio hooks. They are never persisted.
 
@@ -31,7 +33,6 @@ React Hook Form owns the agent settings, speech composer, live message composer,
 | --- | --- |
 | `POST /api/transcribe` | Send an audio file as multipart `audio` and receive a transcript. |
 | `POST /api/speak` | Send JSON with `text` (up to 1,000 characters) and an optional supported `voice`; receive MP3 audio. |
-| `GET /api/deepgram/token` | Check whether the server API key is configured without exposing it. |
 | `POST /api/deepgram/token` | Mint a short-lived token for a browser Voice Agent connection. |
 
 The default live agent uses Deepgram Nova-3, a Deepgram-hosted `gpt-4o-mini` thinking model, and Aura-2 speech. No separate model-provider key is needed.

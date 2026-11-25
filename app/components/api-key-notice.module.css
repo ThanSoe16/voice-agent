@@ -1,0 +1,22 @@
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  border: 1px solid #ecdcb8;
+  border-radius: 9px;
+  background: #fffbf2;
+  color: #9a763a;
+}
+
+.copy { flex: 1; min-width: 0; }
+.copy strong { display: block; font-size: 14px; font-weight: 600; }
+.copy p { margin-top: 4px; color: #a28a61; font-size: 12px; line-height: 1.7; }
+.notice .action { flex-shrink: 0; border-color: #e5d6b8; color: #89682f; background: #fffdf8; font-size: 12px; }
+
+@media (max-width: 720px) {
+  .notice { align-items: flex-start; flex-wrap: wrap; padding: 14px; }
+  .notice > svg { margin-top: 2px; }
+  .notice .action { margin-left: 32px; }
+}

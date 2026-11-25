@@ -3,13 +3,15 @@ import { useCallback, useEffect, useRef } from "react";
 import type { AgentSettings, Conversation, Message } from "./types";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
-import { useVoiceSessionApi, useWorkspaceStore } from "../stores/workspace-provider";
+import { useCredentialsStore, useVoiceSessionApi, useWorkspaceStore } from "../stores/workspace-provider";
+import { deepgramRequestHeaders } from "./deepgram-request";
 import { selectSessionView } from "../stores/session-store";
 import type { VoiceStatus } from "../stores/session-store";
 export function useVoiceAgent() {
   const store = useVoiceSessionApi();
   const session = useStore(store, useShallow(selectSessionView<VoiceStatus>));
   const saveSession = useWorkspaceStore(state => state.saveSession);
+  const apiKey = useCredentialsStore(state => state.apiKey);
   const runtime = useRef<{
     socket?: WebSocket;
     context?: AudioContext;
@@ -87,7 +89,7 @@ export function useVoiceAgent() {
       const context = new AudioContext({ sampleRate: 24000 });
       r.context = context;
       await context.resume();
-      const response = await fetch("/api/deepgram/token", { method: "POST" });
+      const response = await fetch("/api/deepgram/token", { method: "POST", headers: deepgramRequestHeaders(apiKey) });
       const data = await response.json();
       if (!current())
         return;

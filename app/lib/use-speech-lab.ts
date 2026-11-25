@@ -3,13 +3,15 @@ import { useCallback, useEffect, useRef } from "react";
 import type { Conversation, Message } from "./types";
 import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
-import { useLabSessionApi, useWorkspaceStore } from "../stores/workspace-provider";
+import { useCredentialsStore, useLabSessionApi, useWorkspaceStore } from "../stores/workspace-provider";
+import { deepgramRequestHeaders } from "./deepgram-request";
 import { selectSessionView } from "../stores/session-store";
 import type { LabStatus } from "../stores/session-store";
 export function useSpeechLab() {
   const store = useLabSessionApi();
   const session = useStore(store, useShallow(selectSessionView<LabStatus>));
   const saveSession = useWorkspaceStore(state => state.saveSession);
+  const apiKey = useCredentialsStore(state => state.apiKey);
   const state = useRef<{
     recorder?: MediaRecorder;
     stream?: MediaStream;
@@ -115,7 +117,7 @@ export function useSpeechLab() {
         try {
           const form = new FormData();
           form.append("audio", new Blob(chunks, { type: recorder.mimeType }), "recording");
-          const response = await fetch("/api/transcribe", { method: "POST", body: form, signal: r.controller.signal });
+          const response = await fetch("/api/transcribe", { method: "POST", headers: deepgramRequestHeaders(apiKey), body: form, signal: r.controller.signal });
           const data = await response.json();
           if (r.generation !== generation)
             return;
@@ -164,7 +166,7 @@ export function useSpeechLab() {
     store.setState({ error: "", status: "generating" });
     r.controller = new AbortController();
     try {
-      const response = await fetch("/api/speak", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, voice }), signal: r.controller.signal });
+      const response = await fetch("/api/speak", { method: "POST", headers: { "Content-Type": "application/json", ...deepgramRequestHeaders(apiKey) }, body: JSON.stringify({ text, voice }), signal: r.controller.signal });
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || "Speech generation failed.");

@@ -1,0 +1,129 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #eee5f5;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #7e6093;
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.help {
+  color: #a28bb3;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+.status {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid #e4ede7;
+  border-radius: 8px;
+  background: #f6faf7;
+  color: #6c8974;
+}
+
+.status > svg { margin-top: 2px; }
+.status strong { display: block; font-size: 12px; font-weight: 600; }
+.status p { margin-top: 4px; color: #819087; font-size: 12px; line-height: 1.7; }
+.pending { border-color: #ecdcb8; background: #fffbf2; color: #9a763a; }
+.pending p { color: #a28a61; }
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 4px;
+  border: 1px solid #e9dff1;
+  border-radius: 8px;
+  background: #fdfbff;
+}
+
+.inputRow:focus-within {
+  border-color: #a18bdf;
+  box-shadow: 0 0 0 3px #7860d912;
+}
+
+.inputRow:has([aria-invalid="true"]) {
+  border-color: #d29aac;
+}
+
+.inputRow .input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #706079;
+  font-size: 14px;
+  line-height: 1.8;
+  box-shadow: none;
+}
+
+.input::placeholder {
+  color: #b2a3bf;
+}
+
+.inputRow .input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.visibility {
+  flex-shrink: 0;
+  min-width: 50px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 5px;
+  background: #f0eaf8;
+  color: #826498;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.visibility:hover {
+  background: #e8ddf4;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.actions .save {
+  flex: 1;
+  min-height: 40px;
+  font-size: 13px;
+}
+
+.remove {
+  min-height: 40px;
+  padding: 8px 0;
+  background: transparent;
+  color: #947fa5;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.remove:hover {
+  color: #ac5674;
+}

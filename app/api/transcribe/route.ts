@@ -1,10 +1,12 @@
+import { getDeepgramApiKey } from "../deepgram/api-key";
+
 export async function POST(request: Request) {
-  const apiKey = process.env.DEEPGRAM_API_KEY;
+  const apiKey = getDeepgramApiKey(request);
 
   if (!apiKey) {
     return Response.json(
-      { error: "Missing Deepgram API key" },
-      { status: 500 },
+      { error: "Add a Deepgram API key in Agent settings." },
+      { status: 503 },
     );
   }
 

@@ -24,3 +24,101 @@
 @media(max-width:480px){.connection-pill{font-size:9px}.transcript-composer textarea{min-height:75px}.voice-controls{gap:6px}.voice-stage{min-height:415px}.state-badge{font-size:10px}.section-label{font-size:10px}}
 
 .field-error{color:#ac5674;font-size:12px;line-height:1.7;font-weight:400}.field-label [aria-invalid=true]{border-color:#d29aac}.voice-option:focus-visible{outline:3px solid #ae9de6;outline-offset:3px}
+
+/* Keep conversations inside their panel instead of expanding the grid row. */
+.playground-grid {
+  align-items: start;
+}
+.transcript-panel {
+  height: 600px;
+  min-height: 0;
+}
+.transcript-header,
+.transcript-notice {
+  flex-shrink: 0;
+}
+.transcript-body {
+  height: auto;
+  min-height: 0;
+  overscroll-behavior-y: contain;
+}
+.transcript-body:focus-visible {
+  outline: 2px solid #ae9de6;
+  outline-offset: -3px;
+}
+@media (min-width: 721px) {
+  .main-content {
+    --workspace-topbar-height: 75px;
+    --workspace-top-padding: 37px;
+  }
+  .playground-viewport {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - var(--workspace-topbar-height) - var(--workspace-top-padding) - 24px);
+    min-height: 500px;
+  }
+  .playground-viewport > :not(.playground-grid) {
+    flex-shrink: 0;
+  }
+  .playground-viewport .playground-grid {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .playground-grid > .voice-panel,
+  .playground-grid > .transcript-panel {
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+  }
+  .playground-grid > .voice-panel {
+    position: sticky;
+    top: 24px;
+    max-height: 640px;
+    align-self: start;
+    container-type: size;
+  }
+  .voice-panel .voice-stage {
+    min-height: 0;
+    padding-block: 12px 20px;
+  }
+  .voice-panel .voice-orb-wrap {
+    flex-shrink: 0;
+  }
+}
+@media (min-width: 1600px) {
+  .main-content { --workspace-top-padding: 46px; }
+}
+@media (min-width: 721px) and (max-width: 960px) {
+  .main-content {
+    --workspace-topbar-height: 67px;
+    --workspace-top-padding: 30px;
+  }
+}
+@container (max-height: 580px) {
+  .voice-panel .panel-topline { min-height: 50px; padding-block: 12px; }
+  .voice-panel .voice-orb-wrap { height: 150px; margin-block: 0 8px; }
+  .voice-panel .orb-ring { width: 145px; height: 145px; }
+  .voice-panel .ring-two { width: 125px; height: 125px; }
+  .voice-panel .ring-three { width: 165px; height: 165px; }
+  .voice-panel .voice-orb { width: 104px; height: 104px; }
+  .voice-panel .audio-wave { height: 28px; margin-block: 10px; }
+  .voice-panel .session-metrics { padding-block: 12px; }
+}
+@container (max-height: 440px) {
+  .voice-panel .voice-stage { padding-block: 8px 12px; }
+  .voice-panel .voice-orb-wrap { height: 84px; margin-bottom: 6px; }
+  .voice-panel .orb-ring { width: 80px; height: 80px; }
+  .voice-panel .ring-two { width: 68px; height: 68px; }
+  .voice-panel .ring-three { width: 96px; height: 96px; }
+  .voice-panel .voice-orb { width: 56px; height: 56px; }
+  .voice-panel .voice-orb > svg { width: 30px; height: 30px; }
+  .voice-panel .orb-satellite,
+  .voice-panel .audio-wave { display: none; }
+  .voice-panel .voice-stage h2 { font-size: 20px; }
+  .voice-panel .voice-stage > p { line-height: 1.5; margin-top: 4px; }
+  .voice-panel .voice-controls { margin-top: 12px; }
+  .voice-panel .stage-footnote { margin-top: 8px; }
+  .voice-panel .session-metrics > div { gap: 5px; }
+}

@@ -56,7 +56,6 @@ test("transient workspace changes never write history or settings", () => {
   const store = createWorkspaceStore();
   store.getState().hydrate(storage);
   store.getState().setView("history");
-  store.getState().setConfigured(true);
   store.getState().setDialog("settings");
   store.getState().notify("Copied");
   store.getState().openSession(session());

@@ -7,8 +7,9 @@ import { isAgentSettings } from "../stores/workspace-store";
 import type { AgentSettings } from "../lib/types";
 import { voices } from "../lib/types";
 import { Icon } from "./ui-icon";
+import { ApiKeySettings } from "./api-key-settings";
 
-export function AgentSettingsForm({ busy, onClose }: { busy: boolean; onClose: () => void }) {
+export function AgentSettingsForm({ busy, onClose, focusApiKey = false }: { busy: boolean; onClose: () => void; focusApiKey?: boolean }) {
   const settings = useWorkspaceStore(state => state.settings);
   const saveSettings = useWorkspaceStore(state => state.setSettings);
   const { register, control, subscribe, handleSubmit, formState: { errors } } = useForm<AgentSettings>({
@@ -28,6 +29,7 @@ export function AgentSettingsForm({ busy, onClose }: { busy: boolean; onClose: (
 
   return <form onSubmit={handleSubmit(values => { if (!busy) saveSettings(values); onClose(); })} noValidate>
     <p className="modal-intro">A few small choices. A whole different conversation.</p>
+    <ApiKeySettings busy={busy} autoFocus={focusApiKey} />
     <fieldset disabled={busy} className="settings-fields">
       <label className="field-label">Agent name
         <input {...register("name", { validate: value => Boolean(value.trim()) || "Give your agent a name.", maxLength: { value: 60, message: "Use 60 characters or fewer." } })} maxLength={60} aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? "agent-name-error" : undefined} />
@@ -50,7 +52,7 @@ export function AgentSettingsForm({ busy, onClose }: { busy: boolean; onClose: (
         {errors.prompt && <span className="field-error" id="agent-prompt-error" role="alert">{errors.prompt.message}</span>}
       </label>
     </fieldset>
-    <div className="settings-note"><Icon name="shield" size={17} /><p>{busy ? "End your current session to change settings." : "Preferences are saved automatically in this browser. Changes apply to your next session."}</p></div>
+    <div className="settings-note"><Icon name="shield" size={17} /><p>{busy ? "End your current session to change settings." : "Agent preferences save automatically. Use Save API key to store your key. Changes apply to your next session."}</p></div>
     {busy ? <button type="button" className="button button-purple settings-done" onClick={onClose}><Icon name="check" size={17} />Done</button> : <button type="submit" className="button button-purple settings-done"><Icon name="check" size={17} />Done</button>}
   </form>;
 }
