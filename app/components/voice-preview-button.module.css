@@ -1,0 +1,8 @@
+.preview { margin: 12px 0 20px; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; padding: 8px 12px; border: 1px solid #dfd1ee; border-radius: 7px; background: #f6f0fc; color: #8560aa; font-size: 12px; font-weight: 500; }
+.button:hover:not(:disabled) { background: #eee4f8; border-color: #b99bd6; }
+.button:focus-visible { outline: 2px solid #ae9de6; outline-offset: 3px; }
+.button:disabled { opacity: .55; cursor: not-allowed; }
+.status { display: block; margin-top: 6px; color: #a28bb3; font-size: 11px; line-height: 1.6; }
+.status:empty { display: none; }
+.error { margin-top: 6px; color: #ac5674; font-size: 12px; line-height: 1.7; }

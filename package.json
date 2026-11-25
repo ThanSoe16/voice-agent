@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "benchmark:delivery": "node scripts/benchmark-delivery.mjs"
   },
   "dependencies": {
     "next": "16.4.6",

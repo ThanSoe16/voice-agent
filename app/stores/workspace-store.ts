@@ -1,6 +1,7 @@
 import { createStore } from "zustand/vanilla";
-import { defaultSettings, voices } from "../lib/types";
+import { defaultSettings, fluxVoices, voices } from "../lib/types";
 import type { AgentSettings, Conversation } from "../lib/types";
+import { deliverySettings, isDeliverySettings, isSpeechDelivery } from "../lib/emotional-delivery";
 
 export type WorkspaceMode = "lab" | "live";
 export type WorkspaceView = "playground" | "history";
@@ -17,17 +18,26 @@ export function isConversation(value: unknown): value is Conversation {
   return typeof item.id === "string" && typeof item.title === "string"
     && typeof item.startedAt === "number" && Number.isFinite(item.startedAt)
     && typeof item.duration === "number" && Number.isFinite(item.duration)
+    && (item.metrics === undefined || Boolean(item.metrics && typeof item.metrics.deliveryEnabled === "boolean"
+      && Number.isInteger(item.metrics.reconnects) && item.metrics.reconnects >= 0
+      && Array.isArray(item.metrics.firstAudioLatencyMs) && item.metrics.firstAudioLatencyMs.every(value => typeof value === "number" && Number.isFinite(value) && value >= 0)))
     && typeof item.voice === "string" && Array.isArray(item.messages)
     && item.messages.every(message => message && typeof message.id === "string"
       && ["user", "assistant"].includes(message.role) && typeof message.content === "string"
-      && typeof message.at === "number" && Number.isFinite(message.at));
+      && typeof message.at === "number" && Number.isFinite(message.at)
+      && (message.emotion === undefined || ["neutral", "happy", "angry", "sad"].includes(message.emotion))
+      && (message.delivery === undefined || isSpeechDelivery(message.delivery))
+      && (message.voice === undefined || [...voices, ...fluxVoices].some(voice => voice.id === message.voice)));
 }
 
-export function isAgentSettings(value: unknown): value is AgentSettings {
+function isBaseSettings(value: unknown): value is AgentSettings {
   if (!value || typeof value !== "object") return false;
   const item = value as AgentSettings;
   return typeof item.name === "string" && typeof item.prompt === "string"
     && typeof item.greeting === "string" && voices.some(voice => voice.id === item.voice);
+}
+export function isAgentSettings(value: unknown): value is AgentSettings {
+  return isBaseSettings(value) && (value.emotionalDelivery === undefined || isDeliverySettings(value.emotionalDelivery));
 }
 
 export type WorkspaceState = {
@@ -81,7 +91,7 @@ export function createWorkspaceStore() {
       }
       try {
         const settings: unknown = JSON.parse(storage?.getItem(SETTINGS_KEY) || "null");
-        if (isAgentSettings(settings)) loaded.settings = settings;
+        if (isBaseSettings(settings)) loaded.settings = settings.emotionalDelivery === undefined || isDeliverySettings(settings.emotionalDelivery) ? settings : { ...settings, emotionalDelivery: deliverySettings(settings) };
       } catch {
         loaded.storageError = "Saved preferences could not be read. You can configure your agent again.";
       }

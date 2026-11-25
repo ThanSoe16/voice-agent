@@ -1,5 +1,7 @@
 import { createStore } from "zustand/vanilla";
-import type { Message } from "../lib/types";
+import { defaultEmotionalDelivery } from "../lib/types";
+import type { Message, SpeechDelivery } from "../lib/types";
+import { initialDelivery } from "../lib/emotional-delivery";
 
 export type LabStatus = "idle" | "recording" | "processing" | "generating" | "speaking";
 export type VoiceStatus = "idle" | "connecting" | "listening" | "thinking" | "speaking";
@@ -14,6 +16,9 @@ export type SessionState<Status extends SessionStatus = SessionStatus> = {
   level: number;
   latency: number | null;
   audioUrl: string;
+  delivery: SpeechDelivery;
+  warning: string;
+  activeVoice: string;
 };
 
 export function createSessionStore<Status extends SessionStatus>() {
@@ -26,12 +31,15 @@ export function createSessionStore<Status extends SessionStatus>() {
     level: 0,
     latency: null,
     audioUrl: "",
+    delivery: initialDelivery(defaultEmotionalDelivery),
+    warning: "",
+    activeVoice: "",
   }));
 }
 
 // The page subscribes to infrequent session changes. The visualizer subscribes
 // directly to level, keeping microphone animation out of the page render cycle.
 export function selectSessionView<Status extends SessionStatus>(state: SessionState<Status>) {
-  const { status, messages, error, elapsed, muted, latency, audioUrl } = state;
-  return { status, messages, error, elapsed, muted, latency, audioUrl };
+  const { status, messages, error, elapsed, muted, latency, audioUrl, delivery, warning, activeVoice } = state;
+  return { status, messages, error, elapsed, muted, latency, audioUrl, delivery, warning, activeVoice };
 }

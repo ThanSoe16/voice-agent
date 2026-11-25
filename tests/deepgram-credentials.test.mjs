@@ -106,3 +106,63 @@ test("each Deepgram API route uses the browser key only for its own request", as
     assert.equal((await token(makeRequest("deepgram/token", "browser-test-key"))).status, 200);
   });
 });
+
+const speechRequest = body => new Request("http://localhost:3000/api/speak", {
+  method: "POST", headers: { "Content-Type": "application/json", ...deepgramRequestHeaders("preview-test-key") },
+  body: JSON.stringify(body),
+});
+
+test("voice samples use Aura v1 and Flux v2 with the exact selected expressivity", async t => {
+  const requests = [];
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    requests.push({ url: new URL(url), options });
+    return new Response("audio-sample", { headers: { "Content-Type": "audio/mpeg" } });
+  });
+  for (const voice of ["aura-2-thalia-en", "aura-2-andromeda-en", "aura-2-helena-en", "aura-2-apollo-en", "flux-kit-en", "flux-alexis-en"]) {
+    const flux = voice.startsWith("flux-");
+    for (const expressivity of flux ? [-2, -1, 0, 1, 2] : [0]) {
+      const response = await speak(speechRequest({ text: "Hear this voice", voice, expressivity }));
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get("Content-Type"), "audio/mpeg");
+      assert.equal(response.headers.get("Cache-Control"), "no-store");
+      assert.equal(await response.text(), "audio-sample");
+      const { url, options } = requests.at(-1);
+      assert.equal(url.origin, "https://api.deepgram.com");
+      assert.equal(url.pathname, flux ? "/v2/speak" : "/v1/speak");
+      assert.equal(url.searchParams.get("model"), voice);
+      assert.equal(url.searchParams.get("encoding"), "mp3");
+      assert.equal(url.searchParams.get("expressivity"), flux ? String(expressivity) : null);
+      assert.equal(options.headers.Authorization, "Token preview-test-key");
+      assert.deepEqual(JSON.parse(options.body), { text: "Hear this voice" });
+      assert.equal(options.cache, "no-store");
+      assert.ok(options.signal instanceof AbortSignal);
+    }
+  }
+});
+
+test("invalid speech preview controls never reach Deepgram", async t => {
+  t.mock.method(globalThis, "fetch", async () => assert.fail("Invalid request contacted Deepgram"));
+  for (const body of [null, [], {}, { text: "" }, { text: "x".repeat(1001) }, { text: "Hello", voice: "unknown-voice" },
+    ...[3, -3, 0.5, "1", null].map(expressivity => ({ text: "Hello", voice: "flux-kit-en", expressivity })),
+    { text: "Hello", voice: "aura-2-thalia-en", expressivity: 1 }]) {
+    assert.equal((await speak(speechRequest(body))).status, 400);
+  }
+  const malformed = speechRequest({});
+  assert.equal((await speak(new Request(malformed, { body: "bad json" }))).status, 400);
+});
+
+test("speech preview failures report useful errors without leaking credentials or provider details", async t => {
+  const fetchMock = t.mock.method(globalThis, "fetch");
+  for (const status of [401, 403, 429, 500]) {
+    fetchMock.mock.mockImplementation(async () => new Response("private upstream details", { status }));
+    const response = await speak(speechRequest({ text: "Hello", voice: "flux-kit-en" }));
+    assert.equal(response.status, 502);
+    const body = await response.text();
+    assert.doesNotMatch(body, /preview-test-key|private upstream details/);
+    if (status === 401 || status === 403) assert.match(body, /API key permissions/);
+  }
+  fetchMock.mock.mockImplementation(async () => { throw new Error("private network details"); });
+  const response = await speak(speechRequest({ text: "Hello" }));
+  assert.equal(response.status, 502);
+  assert.match((await response.json()).error, /Could not reach Deepgram/);
+});

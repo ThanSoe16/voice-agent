@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import { useShallow } from "zustand/react/shallow";
 import { Icon } from "./components/ui-icon";
 import type { Conversation, Message } from "./lib/types";
@@ -14,6 +15,7 @@ import { HistoryView } from "./components/history-view";
 import { VoiceOrb, Waveform } from "./components/voice-visualizer";
 import { useVoiceAgent } from "./lib/use-voice-agent";
 import { useSpeechLab } from "./lib/use-speech-lab";
+import { deliverySettings } from "./lib/emotional-delivery";
 
 const exampleMessages: Message[] = [
   { id: "example-1", role: "assistant", content: "Hey there! I'm your AI voice assistant. What would you like to talk about today?", at: 0 },
@@ -56,6 +58,7 @@ function Workspace() {
   const voice = useVoiceAgent();
   const lab = useSpeechLab();
   const active = mode === "live" ? voice : lab;
+  const deliveryConfig = deliverySettings(settings);
   const busy = active.status !== "idle";
   const recording = mode === "lab" ? lab.status === "recording" : voice.status !== "idle" && voice.status !== "connecting";
   const processing = ["processing", "generating", "connecting"].includes(active.status);
@@ -67,7 +70,7 @@ function Workspace() {
     const transcript = transcriptBody.current;
     transcript?.scrollTo({ top: transcript.scrollHeight, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
   }, [messages.length]);
-  useEffect(() => { if (!notice) return; const timeout = setTimeout(() => setNotice(""), 3500); return () => clearTimeout(timeout); }, [notice]);
+  useEffect(() => { if (!notice) return; const timeout = setTimeout(() => setNotice(""), 3500); return () => clearTimeout(timeout); }, [notice, setNotice]);
 
   function newSession() { voice.reset(); lab.reset(); startNewSession(); }
   function changeMode(next: "lab" | "live") { if (!busy) selectMode(next); }
@@ -84,7 +87,7 @@ function Workspace() {
 
   return <div className="app-shell">
     <aside className="sidebar">
-      <a className="brand" href="/" aria-label="Vocal home"><span className="brand-mark"><Icon name="wave" size={25} /></span>vocal<span className="brand-period">.</span></a>
+      <Link className="brand" href="/" aria-label="Vocal home"><span className="brand-mark"><Icon name="wave" size={25} /></span>vocal<span className="brand-period">.</span></Link>
       <div className="workspace-switch"><span className="workspace-avatar">M</span><div>My workspace<small>Personal workspace</small></div><Icon name="down" size={15} /></div>
       <span className="nav-label">WORKSPACE</span>
       <nav aria-label="Main navigation">
@@ -124,7 +127,7 @@ function Workspace() {
                   <button className={`button start-button ${recording ? "stop-button" : ""}`} disabled={processing || (configured === null && !selected && !busy)} onClick={() => { if (!selected && !busy && configured !== true) { setDialog("api-key"); return; } if (selected) { newSession(); return; } if (recording || (mode === "live" && busy)) active.stop(); else if (mode === "live") void voice.start(settings); else void lab.start(settings.voice); }}><Icon name={processing ? "wave" : recording ? "stop" : configured === false ? "settings" : "mic"} size={19} />{selected ? "Start your own session" : processing ? "Please wait…" : recording ? mode === "lab" ? "Stop recording" : "End conversation" : configured === false ? "Set API key" : configured === null ? "Checking API key…" : mode === "lab" ? "Start recording" : "Start conversation"}</button>
                   <button className="round-control" onClick={() => setDialog("settings")} aria-label="Configure voice and agent" title="Configure voice and agent" disabled={busy}><Icon name="settings" size={19} /></button>
                 </div>
-                <span className="stage-footnote">{selected ? "No microphone is active in this preview" : recording ? "Your microphone is active" : configured === false ? "Add your Deepgram API key to get started." : mode === "lab" ? "Record a thought. We'll take it from there." : "Microphone access is requested when you start"}</span>
+                <span className="stage-footnote">{selected ? "No microphone is active in this preview" : recording ? mode === "live" && deliveryConfig.enabled ? voice.warning || `Microphone active · ${voice.delivery.tone} · session expressivity ${voice.delivery.expressivity}` : "Your microphone is active" : configured === false ? "Add your Deepgram API key to get started." : mode === "lab" ? "Record a thought. We'll take it from there." : "Microphone access is requested when you start"}</span>
               </div>
               <div className="session-metrics"><div><span><Icon name="clock" size={14} />Duration</span><strong>{durationLabel(selected?.duration ?? active.elapsed)}</strong></div><div><span><Icon name="chat" size={14} />Messages</span><strong>{messages.length.toString().padStart(2, "0")}</strong></div><div><span><Icon name="bolt" size={14} />{mode === "lab" ? "Transcription" : "Response"}</span><strong>{!selected && active.latency !== null ? <>{(active.latency / 1000).toFixed(2)}<small>s</small></> : <span className="metric-dash">—</span>}</strong></div></div>
             </section>
@@ -132,7 +135,7 @@ function Workspace() {
             <section className="transcript-panel" aria-label="Conversation transcript"><div className="transcript-header"><div><Icon name="chat" size={18} /><h2>{selected?.demo ? "Example transcript" : "Conversation"}</h2>{messages.length > 0 && <span className="message-count">{messages.length}</span>}</div><div><button className="icon-button" disabled={!messages.length} onClick={() => void copyTranscript()} aria-label="Copy transcript" title="Copy transcript"><Icon name="copy" size={17} /></button><button className="icon-button" disabled={!messages.length} onClick={exportCurrent} aria-label="Export transcript" title="Export transcript"><Icon name="download" size={18} /></button></div></div>
               {selected && <div className="transcript-notice"><Icon name={selected.demo ? "info" : "history"} size={14} />{selected.demo ? "Sample conversation · for inspiration only" : `${selected.title} · ${dateLabel(selected.startedAt)}`}</div>}
               <div ref={transcriptBody} className={`transcript-body ${!messages.length ? "is-empty" : ""}`} role="log" aria-label="Conversation messages" aria-live="polite" tabIndex={0}>
-                {messages.length ? messages.map(message => <div className={`message message-${message.role}`} key={message.id}><span className={`message-avatar ${message.role === "assistant" ? "agent-avatar" : ""}`}>{message.role === "assistant" ? <Icon name="wave" size={16} /> : "Y"}</span><div className="message-main"><div className="message-meta"><strong>{message.role === "user" ? "You" : selected?.demo ? "Voice agent" : mode === "lab" && !selected ? "Voice playback" : settings.name}</strong><span>{selected?.demo ? durationLabel(message.at / 1000) : new Date(message.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></div><p>{message.content}</p>{message.role === "assistant" && mode === "lab" && !selected && <span className="playback-label"><Icon name="volume" size={12} />Generated with {voiceLabel(settings.voice)}</span>}</div></div>) : <div className="empty-transcript"><div className="empty-chat-icon"><Icon name="chat" size={26} /><span><Icon name="sparkles" size={13} /></span></div><h3>A blank page. A new possibility.</h3><p>{mode === "lab" ? "Your words will appear here after each recording. Listen back in a whole new voice." : "Start talking and follow the conversation here, one thought at a time."}</p><div className="empty-transcript-line" /><span className="tiny-label">NEED A LITTLE INSPIRATION?</span><button className="suggestion" onClick={sample} disabled={busy}><Icon name="headphones" size={15} /><span>Explore a coffee shop conversation</span><Icon name="chevron" size={14} /></button></div>}
+                {messages.length ? messages.map(message => <div className={`message message-${message.role}`} key={message.id}><span className={`message-avatar ${message.role === "assistant" ? "agent-avatar" : ""}`}>{message.role === "assistant" ? <Icon name="wave" size={16} /> : "Y"}</span><div className="message-main"><div className="message-meta"><strong>{message.role === "user" ? "You" : selected?.demo ? "Voice agent" : mode === "lab" && !selected ? "Voice playback" : settings.name}{message.role === "assistant" && message.delivery ? ` · ${message.delivery.tone[0].toUpperCase()}${message.delivery.tone.slice(1)}` : ""}</strong><span>{selected?.demo ? durationLabel(message.at / 1000) : new Date(message.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span></div><p>{message.content}</p>{message.role === "assistant" && mode === "lab" && !selected && <span className="playback-label"><Icon name="volume" size={12} />Generated with {voiceLabel(settings.voice)}</span>}</div></div>) : <div className="empty-transcript"><div className="empty-chat-icon"><Icon name="chat" size={26} /><span><Icon name="sparkles" size={13} /></span></div><h3>A blank page. A new possibility.</h3><p>{mode === "lab" ? "Your words will appear here after each recording. Listen back in a whole new voice." : "Start talking and follow the conversation here, one thought at a time."}</p><div className="empty-transcript-line" /><span className="tiny-label">NEED A LITTLE INSPIRATION?</span><button className="suggestion" onClick={sample} disabled={busy}><Icon name="headphones" size={15} /><span>Explore a coffee shop conversation</span><Icon name="chevron" size={14} /></button></div>}
                 {processing && <div className="processing-message"><span className="typing-dots"><i /><i /><i /></span>{mode === "lab" && lab.status === "generating" ? "Creating your audio" : mode === "lab" ? "Listening for your words" : "Connecting to your agent"}</div>}
               </div>
               <div className="transcript-composer">{mode === "lab" && !selected ? <SpeechComposer key={formRevision} lastTranscript={lastTranscript} voice={settings.voice} busy={busy} configured={configured === true} status={lab.status} audioUrl={lab.audioUrl} onGenerate={lab.generateSpeech} onTogglePlayback={lab.togglePlayback} /> : selected ? <div className="saved-transcript-footer"><Icon name="file" size={16} /><span>{selected.demo ? "Make it yours. Start a new session to try it." : "Saved locally, ready whenever you are."}</span></div> : <LiveComposer key={formRevision} recording={recording} onSend={voice.sendText} />}</div>
@@ -143,7 +146,7 @@ function Workspace() {
         </div>
 
         {view === "playground" ? <>
-          <div className="agent-strip"><div className="agent-strip-title"><span className="agent-mini-avatar"><Icon name="wave" size={20} /></span><div><strong>{settings.name}</strong><span>Powered by Deepgram</span></div></div><div className="agent-strip-config"><span><span className="config-caption">VOICE</span>{voiceLabel(settings.voice)}</span><span><span className="config-caption">LANGUAGE</span>English</span><span><span className="config-caption">TRANSCRIPTION</span>Nova-3</span></div><button className="button button-outline small-button" onClick={() => setDialog("settings")} disabled={busy}><Icon name="settings" size={15} />Configure agent</button></div>
+          <div className="agent-strip"><div className="agent-strip-title"><span className="agent-mini-avatar"><Icon name="wave" size={20} /></span><div><strong>{settings.name}</strong><span>Powered by Deepgram</span></div></div><div className="agent-strip-config"><span><span className="config-caption">VOICE</span>{mode === "live" && busy && voice.delivery.neutralFallback ? "Neutral fallback" : voiceLabel(mode === "live" ? voice.activeVoice || (deliveryConfig.enabled ? deliveryConfig.voice : settings.voice) : settings.voice)}</span><span><span className="config-caption">LANGUAGE</span>English</span><span><span className="config-caption">TRANSCRIPTION</span>Nova-3</span></div><button className="button button-outline small-button" onClick={() => setDialog("settings")} disabled={busy}><Icon name="settings" size={15} />Configure agent</button></div>
 
           <section className="recent-section"><div className="section-heading"><div><h2>Recent sessions</h2><span>Your experiments, all in one place.</span></div><button className="text-button" onClick={() => setView("history")}>View all sessions<Icon name="chevron" size={14} /></button></div>{sessions.length ? <div className="recent-grid">{sessions.slice(0, 3).map(session => <button className="recent-card" key={session.id} onClick={() => openSession(session)} disabled={busy}><span className="recent-icon"><Icon name={session.mode === "lab" ? "mic" : "chat"} size={18} /></span><div><h3>{session.title}</h3><span>{dateLabel(session.startedAt)}</span><div className="recent-meta"><span><Icon name="clock" size={12} />{durationLabel(session.duration)}</span><span>{session.messages.length} messages</span><span>{session.mode === "lab" ? "Speech lab" : "Live agent"}</span></div></div><Icon name="chevron" size={15} /></button>)}</div> : <div className="history-empty-inline"><span className="recent-icon"><Icon name="history" size={20} /></span><div><strong>Your first session is the start of something.</strong><p>Record or start a conversation. Your transcript will be saved here automatically.</p></div><span className="empty-history-tag">Ready when you are</span></div>}</section>
         </> : <>
